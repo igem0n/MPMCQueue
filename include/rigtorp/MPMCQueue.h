@@ -92,20 +92,20 @@ template <typename T> struct Slot {
   template <typename... Args> void construct(Args &&...args) noexcept {
     static_assert(std::is_nothrow_constructible<T, Args &&...>::value,
                   "T must be nothrow constructible with Args&&...");
-    new (&storage) T(std::forward<Args>(args)...);
+    new (storage.data()) T(std::forward<Args>(args)...);
   }
 
   void destroy() noexcept {
     static_assert(std::is_nothrow_destructible<T>::value,
                   "T must be nothrow destructible");
-    reinterpret_cast<T *>(&storage)->~T();
+    reinterpret_cast<T *>(storage.data())->~T();
   }
 
-  T &&move() noexcept { return reinterpret_cast<T &&>(storage); }
+  T &&move() noexcept { return reinterpret_cast<T &&>(*storage.data()); }
 
   // Align to avoid false sharing between adjacent slots
   alignas(hardwareInterferenceSize) std::atomic<size_t> turn = {0};
-  typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
+  alignas(T) std::array<std::byte, sizeof(T)> storage;
 };
 
 template <typename T, typename Allocator = AlignedAllocator<Slot<T>>>
