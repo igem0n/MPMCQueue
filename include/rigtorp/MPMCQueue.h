@@ -105,7 +105,7 @@ template <typename T> struct Slot {
 
   // Align to avoid false sharing between adjacent slots
   alignas(hardwareInterferenceSize) std::atomic<size_t> turn = {0};
-  alignas(T) std::array<std::byte, sizeof(T)> storage;
+  std::array<std::byte, sizeof(T) + alignof(T)> storage;
 };
 
 template <typename T, typename Allocator = AlignedAllocator<Slot<T>>>
